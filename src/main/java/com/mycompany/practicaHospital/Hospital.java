@@ -80,6 +80,7 @@ public class Hospital extends javax.swing.JFrame {
         jButtonBuscar = new javax.swing.JButton();
         jLabel22 = new javax.swing.JLabel();
         jLabel23 = new javax.swing.JLabel();
+        jButtonVerDetalles = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
@@ -373,15 +374,23 @@ public class Hospital extends javax.swing.JFrame {
         jScrollPane1.setViewportView(jTableVistaPacientes);
 
         jButtonBuscar.setText("Buscar");
+        jButtonBuscar.addActionListener(this::jButtonBuscarActionPerformed);
 
         jLabel22.setText("Hora Salida");
 
         jLabel23.setText("Bsuqueda por Nombre");
 
+        jButtonVerDetalles.setText("Ver detalles");
+        jButtonVerDetalles.addActionListener(this::jButtonVerDetallesActionPerformed);
+
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
         jPanel1Layout.setHorizontalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
+                .addGap(0, 0, Short.MAX_VALUE)
+                .addComponent(jLabel23, javax.swing.GroupLayout.PREFERRED_SIZE, 145, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(291, 291, 291))
             .addGroup(jPanel1Layout.createSequentialGroup()
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(jPanel1Layout.createSequentialGroup()
@@ -391,15 +400,13 @@ public class Hospital extends javax.swing.JFrame {
                         .addGap(25, 25, 25)
                         .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 674, javax.swing.GroupLayout.PREFERRED_SIZE))
                     .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addGap(218, 218, 218)
+                        .addGap(189, 189, 189)
                         .addComponent(jTextField6, javax.swing.GroupLayout.PREFERRED_SIZE, 165, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addComponent(jButtonBuscar)))
+                        .addComponent(jButtonBuscar)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jButtonVerDetalles)))
                 .addContainerGap(34, Short.MAX_VALUE))
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
-                .addGap(0, 0, Short.MAX_VALUE)
-                .addComponent(jLabel23, javax.swing.GroupLayout.PREFERRED_SIZE, 145, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(291, 291, 291))
             .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                 .addGroup(jPanel1Layout.createSequentialGroup()
                     .addGap(0, 0, Short.MAX_VALUE)
@@ -415,7 +422,8 @@ public class Hospital extends javax.swing.JFrame {
                 .addGap(18, 18, 18)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jButtonBuscar)
-                    .addComponent(jTextField6, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addComponent(jTextField6, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jButtonVerDetalles))
                 .addGap(32, 32, 32)
                 .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 216, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(61, 61, 61))
@@ -447,11 +455,32 @@ public class Hospital extends javax.swing.JFrame {
 
     private void jRadioButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jRadioButton2ActionPerformed
         // TODO add your handling code here:
-        if (jRadioButton2.isSelected()) {
+        int indice = jComboBoxEleccionCliente.getSelectedIndex();
+
+            if (jRadioButton2.isSelected()) {
             jTabbedPane1.setEnabledAt(2, true);
-        } else {
-            jTabbedPane1.setEnabledAt(2, false);
-        }
+
+                if (indice >= 0) {
+                    Paciente p = controlador.getListaPacientes().get(indice);
+
+                    if (!pacientesEgreso.contains(p)) {
+                        jComboBoxEleccionEgreso.addItem(p.getNombre() + " " + p.getApPat() + " " + p.getApMat());
+                        pacientesEgreso.add(p);
+                    }
+                }
+            } else {
+                jTabbedPane1.setEnabledAt(2, false);
+
+                if (indice >= 0) {
+                    Paciente p = controlador.getListaPacientes().get(indice);
+                    int posicion = pacientesEgreso.indexOf(p);
+
+                    if (posicion >= 0) {
+                        jComboBoxEleccionEgreso.removeItemAt(posicion);
+                        pacientesEgreso.remove(posicion);
+                    }
+                }
+            }
     }//GEN-LAST:event_jRadioButton2ActionPerformed
 
     private void jButtonIngresoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonIngresoActionPerformed
@@ -463,7 +492,27 @@ public class Hospital extends javax.swing.JFrame {
         String genero = jComboBoxGenero.getSelectedItem().toString();
         String peso = jTextFieldPeso.getText();
         java.util.Date fecha = jDateChooserFechaNacimientos.getDate();
+   
+        if (!controlador.esSoloLetras(nombre)) {
+            javax.swing.JOptionPane.showMessageDialog(this, "El nombre solo debe contener letras.");
+            return;
+        }
 
+        if (!controlador.esSoloLetras(apPat)) {
+            javax.swing.JOptionPane.showMessageDialog(this, "El apellido paterno solo debe contener letras.");
+            return;
+        }
+
+        if (!controlador.esSoloLetras(apMat)) {
+            javax.swing.JOptionPane.showMessageDialog(this, "El apellido materno solo debe contener letras.");
+            return;
+        }
+
+        if (!controlador.esSoloNumeros(peso)) {
+            javax.swing.JOptionPane.showMessageDialog(this, "El peso solo debe contener números.");
+            return;
+        }
+    
         if (fecha != null) {
             long tiempoMS = java.lang.System.currentTimeMillis() - fecha.getTime();
             int edad = (int) (tiempoMS / 1000 / 60 / 60 / 24 / 365.25);
@@ -474,7 +523,6 @@ public class Hospital extends javax.swing.JFrame {
                 javax.swing.table.DefaultTableModel modeloTabla = (javax.swing.table.DefaultTableModel) jTableVistaPacientes.getModel();
                 modeloTabla.addRow(new Object[]{nombre, apPat, apMat, edad, genero, peso});
                 jComboBoxEleccionCliente.addItem(nombre + " " + apPat + " " + apMat);
-                jComboBoxEleccionEgreso.addItem(nombre + " " + apPat + " " + apMat);
                 jTextFieldNombre.setText("");
                 jTextFieldApPat.setText("");
                 jTextFieldApMat.setText("");
@@ -483,8 +531,6 @@ public class Hospital extends javax.swing.JFrame {
                 jDateChooserFechaNacimientos.setDate(null);
                 jComboBoxGenero.setSelectedIndex(0);
                 jSpinnerFechaHora.setValue(new java.util.Date());
-
-
                 javax.swing.JOptionPane.showMessageDialog(this, "Paciente creado exitosamente en el Modelo.");
             } else {
                 javax.swing.JOptionPane.showMessageDialog(this, "No se pudo crear el paciente. Verifique el nombre.");
@@ -506,10 +552,29 @@ public class Hospital extends javax.swing.JFrame {
             String alergias     = jTextFieldAlergias.getText();
             String observaciones = jTextFieldObservacionesConsulta.getText();
             String diagnostico  = jTextFieldDiagnosticoConsulta.getText();
+            
+            if (!controlador.esSoloLetras(alergias)) {
+                javax.swing.JOptionPane.showMessageDialog(this, "Las alergias solo deben contener letras.");
+                return;
+            }
+
+            if (!controlador.esSoloLetras(observaciones)) {
+                javax.swing.JOptionPane.showMessageDialog(this, "Las observaciones solo deben contener letras.");
+                return;
+            }
+
+            if (!controlador.esSoloLetras(diagnostico)) {
+                javax.swing.JOptionPane.showMessageDialog(this, "El diagnóstico solo debe contener letras.");
+                return;
+            }
 
             boolean ok = controlador.registrarConsulta(indice, alergias, observaciones, diagnostico);
 
                 if (ok) {
+                    jTextFieldAlergias.setText("");
+                    jTextFieldObservacionesConsulta.setText("");
+                    jTextFieldDiagnosticoConsulta.setText("");
+                    buttonGroup1.clearSelection();
                     javax.swing.JOptionPane.showMessageDialog(this, "Consulta registrada correctamente.");
                 } else {
                     javax.swing.JOptionPane.showMessageDialog(this, "Error al registrar la consulta.");
@@ -518,27 +583,48 @@ public class Hospital extends javax.swing.JFrame {
 
     private void jComboBoxEleccionClienteActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jComboBoxEleccionClienteActionPerformed
         // TODO add your handling code here:
-        buttonGroup1.clearSelection();
-        jTabbedPane1.setEnabledAt(2, false);
+         int indice = jComboBoxEleccionCliente.getSelectedIndex();
+        if (indice < 0) {
+            buttonGroup1.clearSelection();
+            jTabbedPane1.setEnabledAt(2, false);
+            return;
+        }
+        Paciente p = controlador.getListaPacientes().get(indice);
+
+        if (pacientesEgreso.contains(p)) {
+            jRadioButton2.setSelected(true);
+            jTabbedPane1.setEnabledAt(2, true);
+        } else {
+            buttonGroup1.clearSelection();
+            jTabbedPane1.setEnabledAt(2, false);
+        }
     }//GEN-LAST:event_jComboBoxEleccionClienteActionPerformed
 
     private void jButtonEgresoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonEgresoActionPerformed
-        // TODO add your handling code here:
-         int indice = jComboBoxEleccionEgreso.getSelectedIndex();
+        int posicion = jComboBoxEleccionEgreso.getSelectedIndex();
 
-        if (indice < 0) {
-        javax.swing.JOptionPane.showMessageDialog(this, "Selecciona un paciente.");
-        return;
+        if (posicion < 0) {
+            javax.swing.JOptionPane.showMessageDialog(this, "Selecciona un paciente.");
+            return;
         }
+
+        Paciente p = pacientesEgreso.get(posicion);
+        int indice = controlador.obtenerIndice(p);
 
         java.util.Date fecha = (java.util.Date) jSpinnerHoraSalida.getValue();
         String horaSalida = new java.text.SimpleDateFormat("dd/MM/yyyy HH:mm").format(fecha);
 
         String observaciones = jTextFieldObservacionesEgreso.getText();
+        
+        if (!controlador.esTextoValido(observaciones)) {
+            javax.swing.JOptionPane.showMessageDialog(this, "Las observaciones de egreso deben contener texto válido.");
+            return;
+        }
 
         boolean ok = controlador.registrarEgreso(indice, horaSalida, observaciones);
 
         if (ok) {
+            jTextFieldObservacionesEgreso.setText("");
             javax.swing.JOptionPane.showMessageDialog(this, "Egreso registrado correctamente.\nHora: " + horaSalida);
         } else {
             javax.swing.JOptionPane.showMessageDialog(this, "Error al registrar el egreso.");
@@ -548,6 +634,62 @@ public class Hospital extends javax.swing.JFrame {
     private void jComboBoxEleccionEgresoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jComboBoxEleccionEgresoActionPerformed
         // TODO add your handling code here:
     }//GEN-LAST:event_jComboBoxEleccionEgresoActionPerformed
+
+    private void jButtonBuscarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonBuscarActionPerformed
+        // TODO add your handling code here:
+        String texto = jTextField6.getText();
+        
+        if (!controlador.esSoloLetras(texto)) {
+            javax.swing.JOptionPane.showMessageDialog(this, "La búsqueda solo debe contener letras.");
+            return;
+        }
+
+        java.util.List<Paciente> resultados = controlador.buscarTodosPorNombre(texto);
+
+        if (resultados.isEmpty()) {
+            javax.swing.JOptionPane.showMessageDialog(this, "No se encontró al paciente.");
+            return;
+        }
+
+        if (resultados.size() == 1) {
+            mostrarDatosPaciente(resultados.get(0));
+            return;
+        }
+
+        String[] opciones = new String[resultados.size()];
+        for (int i = 0; i < resultados.size(); i++) {
+            Paciente p = resultados.get(i);
+            opciones[i] = p.getNombre() + " " + p.getApPat() + " " + p.getApMat() + " (Edad: " + p.getEdad() + ")";
+        }
+
+        String seleccion = (String) javax.swing.JOptionPane.showInputDialog(
+            this,
+            "Se encontraron varios pacientes con ese nombre. Selecciona uno:",
+            "Pacientes encontrados",
+            javax.swing.JOptionPane.QUESTION_MESSAGE,
+            null,
+            opciones,
+            opciones[0]
+        );
+
+        if (seleccion != null) {
+            int indiceElegido = java.util.Arrays.asList(opciones).indexOf(seleccion);
+            mostrarDatosPaciente(resultados.get(indiceElegido));
+        }
+    }//GEN-LAST:event_jButtonBuscarActionPerformed
+
+    private void jButtonVerDetallesActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonVerDetallesActionPerformed
+        // TODO add your handling code here:
+         int fila = jTableVistaPacientes.getSelectedRow();
+
+        if (fila < 0) {
+            javax.swing.JOptionPane.showMessageDialog(this, "Selecciona un paciente de la tabla.");
+            return;
+        }
+
+        Paciente p = controlador.getListaPacientes().get(fila);
+        mostrarDatosPaciente(p);
+    }//GEN-LAST:event_jButtonVerDetallesActionPerformed
     
     /**
      * @param args the command line arguments
@@ -575,6 +717,13 @@ public class Hospital extends javax.swing.JFrame {
     }
 
     private final Controlador controlador = new Controlador();
+    private final java.util.List<Paciente> pacientesEgreso = new java.util.ArrayList<>();
+    
+    private void mostrarDatosPaciente(Paciente p) {
+        String info = controlador.obtenerInfoCompleta(p);
+        javax.swing.JOptionPane.showMessageDialog(this, info, "Datos del paciente", javax.swing.JOptionPane.INFORMATION_MESSAGE);
+    }   
+
     
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.ButtonGroup buttonGroup1;
@@ -582,6 +731,7 @@ public class Hospital extends javax.swing.JFrame {
     private javax.swing.JButton jButtonEgreso;
     private javax.swing.JButton jButtonIngreso;
     private javax.swing.JButton jButtonRegistroSintomas;
+    private javax.swing.JButton jButtonVerDetalles;
     private javax.swing.JComboBox<String> jComboBoxEleccionCliente;
     private javax.swing.JComboBox<String> jComboBoxEleccionEgreso;
     private javax.swing.JComboBox<String> jComboBoxGenero;
