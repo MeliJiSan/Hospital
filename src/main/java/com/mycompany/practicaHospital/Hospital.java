@@ -472,7 +472,8 @@ public class Hospital extends javax.swing.JFrame {
             jTabbedPane1.setEnabledAt(2, true);
 
                 if (indice >= 0) {
-                    Paciente p = controlador.getListaPacientes().get(indice);
+                    Paciente p = controlador.obtenerPacientePorIndice(indice);
+                    if (p == null) { return; }
 
                     if (!pacientesEgreso.contains(p)) {
                         jComboBoxEleccionEgreso.addItem(p.getNombre() + " " + p.getApPat() + " " + p.getApMat());
@@ -483,7 +484,8 @@ public class Hospital extends javax.swing.JFrame {
                 jTabbedPane1.setEnabledAt(2, false);
 
                 if (indice >= 0) {
-                    Paciente p = controlador.getListaPacientes().get(indice);
+                    Paciente p = controlador.obtenerPacientePorIndice(indice);
+                    if (p == null) { return; }
                     int posicion = pacientesEgreso.indexOf(p);
 
                     if (posicion >= 0) {
@@ -611,7 +613,10 @@ public class Hospital extends javax.swing.JFrame {
             jTabbedPane1.setEnabledAt(2, false);
             return;
         }
-        Paciente p = controlador.getListaPacientes().get(indice);
+        Paciente p = controlador.obtenerPacientePorIndice(indice);
+        if (p == null) {
+            return;
+        }
 
         if (pacientesEgreso.contains(p)) {
             jRadioButton2.setSelected(true);
@@ -720,7 +725,11 @@ public class Hospital extends javax.swing.JFrame {
             return;
         }
 
-        Paciente p = controlador.getListaPacientes().get(fila);
+        Paciente p = controlador.obtenerPacientePorIndice(fila);
+        if (p == null) {
+            javax.swing.JOptionPane.showMessageDialog(this, "No se encontró el paciente seleccionado.");
+            return;
+        }
         mostrarDatosPaciente(p);
 
     } catch (Exception e) {
