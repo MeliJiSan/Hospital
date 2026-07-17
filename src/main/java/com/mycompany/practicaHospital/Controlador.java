@@ -41,21 +41,10 @@ public class Controlador {
 
     // Trae todos los pacientes ya guardados en la BD y llena la lista en memoria.
     // Se usa al iniciar el programa para mostrar los registros existentes.
-    // Regresa false (en vez de tumbar la aplicacion) si la BD no esta disponible
-    // o la conexion falla, por ejemplo por credenciales incorrectas en Modelo.
-    public boolean cargarPacientesDesdeBD() {
-        try {
-            List<Paciente> pacientesBD = Modelo.obtenerPacientes();
-            listaPacientes.clear();
-            listaPacientes.addAll(pacientesBD);
-            return true;
-        } catch (RuntimeException e) {
-            // Modelo puede regresar una conexion nula si fallan las credenciales
-            // o el servidor no esta disponible; aqui se evita que eso tumbe la GUI.
-            System.err.println("No se pudieron cargar los pacientes desde la BD: " + e.getMessage());
-            listaPacientes.clear();
-            return false;
-        }
+    public void cargarPacientesDesdeBD() {
+        List<Paciente> pacientesBD = Modelo.obtenerPacientes();
+        listaPacientes.clear();
+        listaPacientes.addAll(pacientesBD);
     }
 
     // ================= ACCESO SEGURO POR INDICE / ID =================
@@ -94,10 +83,12 @@ public class Controlador {
     }
 
     // ================= PACIENTE =================
-
-    public boolean crearPaciente(String nombre, String apPat, String apMat, String genero, double peso,
+     public boolean crearPaciente(String nombre, String apPat, String apMat, int edad, String genero, double peso,
                                   java.util.Date fechaNacimiento, java.util.Date fechaHoraIngreso) {
         if (!esSoloLetras(nombre) || !esSoloLetras(apPat) || !esSoloLetras(apMat)) {
+            return false;
+        }
+        if (edad < 0 || edad > 130) {
             return false;
         }
         if (peso <= 0) {
@@ -108,6 +99,7 @@ public class Controlador {
         }
 
         Paciente nuevo = new Paciente(nombre, apPat, apMat, genero, peso, fechaNacimiento, fechaHoraIngreso);
+        nuevo.setEdad(edad);
 
         // Guarda en la tabla "Hospital".pacientes y recupera el id_paciente generado
         int idGenerado = Modelo.insertarPaciente(nuevo);
@@ -180,6 +172,44 @@ public class Controlador {
                 new java.sql.Time(horaSalida.getTime())
         );
         Modelo.insertarEgreso(egreso);
+
+        return true;
+    }
+    
+    // ================= RECETA =================
+
+    public boolean registrarReceta(int idConsulta, String indicacionesGenerales, List<DetalleReceta> medicamentos) {
+        if (idConsulta <= 0) {
+            return false;
+        }
+        if (!esTextoValido(indicacionesGenerales)) {
+            return false;
+        }
+        if (medicamentos == null || medicamentos.isEmpty()) {
+            return false;
+        }
+        for (DetalleReceta d : medicamentos) {
+            if (!esSoloLetras(d.getMedicamentoNombre()) || !esTextoValido(d.getDosis())) {
+                return false;
+            }
+        }
+
+        Receta receta = new Receta(
+                new java.sql.Timestamp(System.currentTimeMillis()),
+                indicacionesGenerales,
+                idConsulta
+        );
+
+        int idRecetaGenerado = Modelo.insertarReceta(receta);
+        if (idRecetaGenerado <= 0) {
+            return false; // no se pudo guardar la receta
+        }
+        receta.setIdReceta(idRecetaGenerado);
+
+        for (DetalleReceta d : medicamentos) {
+            d.setIdReceta(idRecetaGenerado);
+            Modelo.insertarDetalleReceta(d);
+        }
 
         return true;
     }

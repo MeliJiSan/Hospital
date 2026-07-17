@@ -52,6 +52,7 @@ public class Paciente {
     public String getApPat() { return apPat; }
     public String getApMat() { return apMat; }
     public int getEdad() { return edad; }
+    public void setEdad(int edad) { this.edad = edad; }
     public String getGenero() { return genero; }
     public double getPeso() { return peso; }
 
@@ -76,7 +77,7 @@ public class Paciente {
 
     public String getObservacionesEgreso() { return observacionesEgreso; }  
     public void setObservacionesEgreso(String observacionesEgreso) { this.observacionesEgreso = observacionesEgreso; }
-
+  
     @Override
     public String toString() {
         return nombre + " " + apPat + " " + apMat;

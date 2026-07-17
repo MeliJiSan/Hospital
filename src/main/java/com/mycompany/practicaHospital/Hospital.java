@@ -16,21 +16,100 @@ public class Hospital extends javax.swing.JFrame {
     /**
      * Creates new form Hospital
      */
+ private PanelListaMedicamentos panelMedicamentosReceta;
+    private javax.swing.JComboBox<Paciente> jComboBoxPacienteReceta;
+    private javax.swing.JTextArea jTextAreaIndicaciones;
+
     public Hospital() {
         initComponents();
         jTabbedPane1.setEnabledAt(2, false);
         cargarPacientesExistentes();
+        construirPestanaReceta();
+    }
+    private void construirPestanaReceta() {
+        javax.swing.JPanel panelReceta = new javax.swing.JPanel(new java.awt.BorderLayout(10, 10));
+        panelReceta.setBorder(javax.swing.BorderFactory.createEmptyBorder(10, 10, 10, 10));
+
+        javax.swing.JPanel panelSuperior = new javax.swing.JPanel(new java.awt.GridLayout(2, 1, 5, 5));
+
+        jComboBoxPacienteReceta = new javax.swing.JComboBox<>();
+        for (Paciente p : controlador.getListaPacientes()) {
+            jComboBoxPacienteReceta.addItem(p);
+        }
+        javax.swing.JPanel filaPaciente = new javax.swing.JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT));
+        filaPaciente.add(new javax.swing.JLabel("Paciente:"));
+        filaPaciente.add(jComboBoxPacienteReceta);
+        panelSuperior.add(filaPaciente);
+
+        jTextAreaIndicaciones = new javax.swing.JTextArea(3, 40);
+        jTextAreaIndicaciones.setLineWrap(true);
+        jTextAreaIndicaciones.setWrapStyleWord(true);
+        javax.swing.JPanel filaIndicaciones = new javax.swing.JPanel(new java.awt.BorderLayout());
+        filaIndicaciones.add(new javax.swing.JLabel("Indicaciones generales:"), java.awt.BorderLayout.NORTH);
+        filaIndicaciones.add(new javax.swing.JScrollPane(jTextAreaIndicaciones), java.awt.BorderLayout.CENTER);
+        panelSuperior.add(filaIndicaciones);
+
+        panelReceta.add(panelSuperior, java.awt.BorderLayout.NORTH);
+
+        panelMedicamentosReceta = new PanelListaMedicamentos();
+        panelReceta.add(panelMedicamentosReceta, java.awt.BorderLayout.CENTER);
+
+        javax.swing.JButton botonGenerarReceta = new javax.swing.JButton("Generar receta");
+        botonGenerarReceta.addActionListener(e -> generarRecetaActionPerformed());
+        javax.swing.JPanel panelBoton = new javax.swing.JPanel();
+        panelBoton.add(botonGenerarReceta);
+        panelReceta.add(panelBoton, java.awt.BorderLayout.SOUTH);
+
+        jTabbedPane1.addTab("Receta", panelReceta);
+    }
+
+    private void generarRecetaActionPerformed() {
+        Paciente paciente = (Paciente) jComboBoxPacienteReceta.getSelectedItem();
+        if (paciente == null) {
+            javax.swing.JOptionPane.showMessageDialog(this, "Selecciona un paciente.");
+            return;
+        }
+
+        int idConsulta = Modelo.obtenerUltimaConsultaId(paciente.getIdPaciente());
+        if (idConsulta <= 0) {
+            javax.swing.JOptionPane.showMessageDialog(this, "Este paciente no tiene ninguna consulta registrada todavia.");
+            return;
+        }
+
+        String indicaciones = jTextAreaIndicaciones.getText().trim();
+        java.util.List<DetalleReceta> medicamentos = panelMedicamentosReceta.obtenerMedicamentos();
+
+        boolean guardado = controlador.registrarReceta(idConsulta, indicaciones, medicamentos);
+        if (!guardado) {
+            javax.swing.JOptionPane.showMessageDialog(this, "No se pudo guardar la receta. Verifica los datos.");
+            return;
+        }
+
+        Receta receta = new Receta(new java.sql.Timestamp(System.currentTimeMillis()), indicaciones, idConsulta);
+        String nombreArchivo = "receta_" + paciente.getIdPaciente() + "_" + System.currentTimeMillis() + ".pdf";
+        boolean pdfOk = GeneradorPDF.generarRecetaPDF(paciente, receta, medicamentos, nombreArchivo);
+
+        if (pdfOk) {
+            jTextAreaIndicaciones.setText("");
+            panelMedicamentosReceta.limpiar();
+            try {
+                java.io.File archivoPdf = new java.io.File(nombreArchivo);
+                if (java.awt.Desktop.isDesktopSupported()) {
+                    java.awt.Desktop.getDesktop().open(archivoPdf);
+                } else {
+                    javax.swing.JOptionPane.showMessageDialog(this, "Receta guardada en: " + nombreArchivo);
+                }
+            } catch (java.io.IOException ex) {
+                javax.swing.JOptionPane.showMessageDialog(this, "Receta guardada, pero no se pudo abrir automaticamente: " + nombreArchivo);
+            }
+        } else {
+            javax.swing.JOptionPane.showMessageDialog(this, "Receta guardada, pero hubo un error al generar el PDF.");
+        }
     }
 
     // Trae los pacientes ya guardados en la BD y los pinta en la tabla y el combo box
     private void cargarPacientesExistentes() {
-        boolean ok = controlador.cargarPacientesDesdeBD();
-        if (!ok) {
-            javax.swing.JOptionPane.showMessageDialog(this,
-                "No se pudo conectar a la base de datos. Revisa la conexion en Modelo.java.\n"
-                + "La aplicación se abrirá sin pacientes cargados.",
-                "Error de conexión", javax.swing.JOptionPane.WARNING_MESSAGE);
-        }
+        controlador.cargarPacientesDesdeBD();
         javax.swing.table.DefaultTableModel modeloTabla = (javax.swing.table.DefaultTableModel) jTableVistaPacientes.getModel();
         for (Paciente p : controlador.getListaPacientes()) {
             modeloTabla.addRow(new Object[]{p.getNombre(), p.getApPat(), p.getApMat(), p.getEdad(), p.getGenero(), p.getPeso()});
@@ -130,90 +209,67 @@ public class Hospital extends javax.swing.JFrame {
 
         jSpinnerFechaHora.setModel(new javax.swing.SpinnerDateModel(new java.util.Date(), null, null, java.util.Calendar.HOUR_OF_DAY));
 
-        javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
-        jPanel2.setLayout(jPanel2Layout);
-        jPanel2Layout.setHorizontalGroup(
-            jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel2Layout.createSequentialGroup()
-                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(jPanel2Layout.createSequentialGroup()
-                        .addGap(300, 300, 300)
-                        .addComponent(jButtonIngreso, javax.swing.GroupLayout.PREFERRED_SIZE, 103, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addGroup(jPanel2Layout.createSequentialGroup()
-                        .addGap(31, 31, 31)
-                        .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                            .addComponent(jLabel10)
-                            .addComponent(jLabel7, javax.swing.GroupLayout.PREFERRED_SIZE, 46, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addGroup(jPanel2Layout.createSequentialGroup()
-                                .addComponent(jLabel14)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                                .addComponent(jDateChooserFechaNacimientos, javax.swing.GroupLayout.PREFERRED_SIZE, 136, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addGap(53, 53, 53)
-                                .addComponent(jLabel15, javax.swing.GroupLayout.PREFERRED_SIZE, 88, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(jSpinnerFechaHora, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                            .addGroup(jPanel2Layout.createSequentialGroup()
-                                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                                    .addComponent(jLabel2)
-                                    .addGroup(jPanel2Layout.createSequentialGroup()
-                                        .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                                            .addComponent(jTextFieldNombre, javax.swing.GroupLayout.PREFERRED_SIZE, 144, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                            .addComponent(jComboBoxGenero, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                                        .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                            .addGroup(jPanel2Layout.createSequentialGroup()
-                                                .addGap(18, 18, 18)
-                                                .addComponent(jLabel8, javax.swing.GroupLayout.PREFERRED_SIZE, 62, javax.swing.GroupLayout.PREFERRED_SIZE))
-                                            .addGroup(jPanel2Layout.createSequentialGroup()
-                                                .addGap(42, 42, 42)
-                                                .addComponent(jLabel13)))
-                                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                        .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                                            .addComponent(jTextFieldPeso, javax.swing.GroupLayout.DEFAULT_SIZE, 144, Short.MAX_VALUE)
-                                            .addComponent(jTextFieldApPat))))
-                                .addGap(18, 18, 18)
-                                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                                    .addComponent(jLabel9, javax.swing.GroupLayout.PREFERRED_SIZE, 66, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                    .addComponent(jLabel16, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE))
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                                    .addComponent(jTextFieldEdad, javax.swing.GroupLayout.DEFAULT_SIZE, 144, Short.MAX_VALUE)
-                                    .addComponent(jTextFieldApMat))))))
-                .addContainerGap(42, Short.MAX_VALUE))
-        );
-        jPanel2Layout.setVerticalGroup(
-            jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel2Layout.createSequentialGroup()
-                .addContainerGap()
-                .addComponent(jLabel2, javax.swing.GroupLayout.PREFERRED_SIZE, 35, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(28, 28, 28)
-                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jTextFieldNombre, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jLabel7)
-                    .addComponent(jLabel8)
-                    .addComponent(jTextFieldApPat, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jTextFieldApMat, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jLabel9))
-                .addGap(27, 27, 27)
-                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel10)
-                    .addComponent(jComboBoxGenero, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jTextFieldPeso, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jLabel13)
-                    .addComponent(jTextFieldEdad, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jLabel16))
-                .addGap(39, 39, 39)
-                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jDateChooserFechaNacimientos, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jLabel14)
-                    .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                        .addComponent(jLabel15)
-                        .addComponent(jSpinnerFechaHora, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                .addGap(59, 59, 59)
-                .addComponent(jButtonIngreso, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(129, Short.MAX_VALUE))
-        );
+        // Layout adaptable: crece/decrece con la ventana sin deformar los controles
+        jPanel2.setLayout(new java.awt.GridBagLayout());
+        java.awt.GridBagConstraints gbcIngreso = new java.awt.GridBagConstraints();
+        gbcIngreso.insets = new java.awt.Insets(8, 8, 8, 8);
+
+        jLabel2.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        gbcIngreso.gridx = 0;
+        gbcIngreso.gridy = 0;
+        gbcIngreso.gridwidth = 6;
+        gbcIngreso.anchor = java.awt.GridBagConstraints.CENTER;
+        jPanel2.add(jLabel2, gbcIngreso);
+        gbcIngreso.gridwidth = 1;
+
+        // Fila: Nombre / Apellido P / Apellido M
+        gbcIngreso.gridy = 1;
+        gbcIngreso.gridx = 0; gbcIngreso.fill = java.awt.GridBagConstraints.NONE; gbcIngreso.weightx = 0; gbcIngreso.anchor = java.awt.GridBagConstraints.EAST;
+        jPanel2.add(jLabel7, gbcIngreso);
+        gbcIngreso.gridx = 1; gbcIngreso.fill = java.awt.GridBagConstraints.HORIZONTAL; gbcIngreso.weightx = 0.33; gbcIngreso.anchor = java.awt.GridBagConstraints.WEST;
+        jPanel2.add(jTextFieldNombre, gbcIngreso);
+        gbcIngreso.gridx = 2; gbcIngreso.fill = java.awt.GridBagConstraints.NONE; gbcIngreso.weightx = 0; gbcIngreso.anchor = java.awt.GridBagConstraints.EAST;
+        jPanel2.add(jLabel8, gbcIngreso);
+        gbcIngreso.gridx = 3; gbcIngreso.fill = java.awt.GridBagConstraints.HORIZONTAL; gbcIngreso.weightx = 0.33; gbcIngreso.anchor = java.awt.GridBagConstraints.WEST;
+        jPanel2.add(jTextFieldApPat, gbcIngreso);
+        gbcIngreso.gridx = 4; gbcIngreso.fill = java.awt.GridBagConstraints.NONE; gbcIngreso.weightx = 0; gbcIngreso.anchor = java.awt.GridBagConstraints.EAST;
+        jPanel2.add(jLabel9, gbcIngreso);
+        gbcIngreso.gridx = 5; gbcIngreso.fill = java.awt.GridBagConstraints.HORIZONTAL; gbcIngreso.weightx = 0.33; gbcIngreso.anchor = java.awt.GridBagConstraints.WEST;
+        jPanel2.add(jTextFieldApMat, gbcIngreso);
+
+        // Fila: Genero / Peso / Edad
+        gbcIngreso.gridy = 2;
+        gbcIngreso.gridx = 0; gbcIngreso.fill = java.awt.GridBagConstraints.NONE; gbcIngreso.weightx = 0; gbcIngreso.anchor = java.awt.GridBagConstraints.EAST;
+        jPanel2.add(jLabel10, gbcIngreso);
+        gbcIngreso.gridx = 1; gbcIngreso.fill = java.awt.GridBagConstraints.HORIZONTAL; gbcIngreso.weightx = 0.33; gbcIngreso.anchor = java.awt.GridBagConstraints.WEST;
+        jPanel2.add(jComboBoxGenero, gbcIngreso);
+        gbcIngreso.gridx = 2; gbcIngreso.fill = java.awt.GridBagConstraints.NONE; gbcIngreso.weightx = 0; gbcIngreso.anchor = java.awt.GridBagConstraints.EAST;
+        jPanel2.add(jLabel13, gbcIngreso);
+        gbcIngreso.gridx = 3; gbcIngreso.fill = java.awt.GridBagConstraints.HORIZONTAL; gbcIngreso.weightx = 0.33; gbcIngreso.anchor = java.awt.GridBagConstraints.WEST;
+        jPanel2.add(jTextFieldPeso, gbcIngreso);
+        gbcIngreso.gridx = 4; gbcIngreso.fill = java.awt.GridBagConstraints.NONE; gbcIngreso.weightx = 0; gbcIngreso.anchor = java.awt.GridBagConstraints.EAST;
+        jPanel2.add(jLabel16, gbcIngreso);
+        gbcIngreso.gridx = 5; gbcIngreso.fill = java.awt.GridBagConstraints.HORIZONTAL; gbcIngreso.weightx = 0.33; gbcIngreso.anchor = java.awt.GridBagConstraints.WEST;
+        jPanel2.add(jTextFieldEdad, gbcIngreso);
+
+        // Fila: Fecha de nacimiento / Fecha y hora
+        gbcIngreso.gridy = 3;
+        gbcIngreso.gridx = 0; gbcIngreso.gridwidth = 1; gbcIngreso.fill = java.awt.GridBagConstraints.NONE; gbcIngreso.weightx = 0; gbcIngreso.anchor = java.awt.GridBagConstraints.EAST;
+        jPanel2.add(jLabel14, gbcIngreso);
+        gbcIngreso.gridx = 1; gbcIngreso.gridwidth = 2; gbcIngreso.fill = java.awt.GridBagConstraints.HORIZONTAL; gbcIngreso.weightx = 0.66; gbcIngreso.anchor = java.awt.GridBagConstraints.WEST;
+        jPanel2.add(jDateChooserFechaNacimientos, gbcIngreso);
+        gbcIngreso.gridwidth = 1;
+        gbcIngreso.gridx = 3; gbcIngreso.fill = java.awt.GridBagConstraints.NONE; gbcIngreso.weightx = 0; gbcIngreso.anchor = java.awt.GridBagConstraints.EAST;
+        jPanel2.add(jLabel15, gbcIngreso);
+        gbcIngreso.gridx = 4; gbcIngreso.gridwidth = 2; gbcIngreso.fill = java.awt.GridBagConstraints.HORIZONTAL; gbcIngreso.weightx = 0.66; gbcIngreso.anchor = java.awt.GridBagConstraints.WEST;
+        jPanel2.add(jSpinnerFechaHora, gbcIngreso);
+        gbcIngreso.gridwidth = 1;
+
+        // Boton Ingresar, centrado, con espacio flexible debajo
+        gbcIngreso.gridx = 0; gbcIngreso.gridy = 4; gbcIngreso.gridwidth = 6;
+        gbcIngreso.fill = java.awt.GridBagConstraints.NONE; gbcIngreso.weightx = 0; gbcIngreso.weighty = 1.0;
+        gbcIngreso.anchor = java.awt.GridBagConstraints.CENTER;
+        jPanel2.add(jButtonIngreso, gbcIngreso);
 
         jTabbedPane1.addTab("Ingreso", jPanel2);
 
@@ -237,66 +293,44 @@ public class Hospital extends javax.swing.JFrame {
 
         jLabel24.setText("Elegir paciente");
 
-        javax.swing.GroupLayout jPanel4Layout = new javax.swing.GroupLayout(jPanel4);
-        jPanel4.setLayout(jPanel4Layout);
-        jPanel4Layout.setHorizontalGroup(
-            jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel4Layout.createSequentialGroup()
-                .addGap(299, 299, 299)
-                .addComponent(jLabel4)
-                .addContainerGap(300, Short.MAX_VALUE))
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel4Layout.createSequentialGroup()
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel4Layout.createSequentialGroup()
-                        .addComponent(jLabel19, javax.swing.GroupLayout.PREFERRED_SIZE, 120, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(18, 18, 18)
-                        .addComponent(jTextFieldDiagnosticoConsulta, javax.swing.GroupLayout.PREFERRED_SIZE, 185, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel4Layout.createSequentialGroup()
-                        .addComponent(jLabel18, javax.swing.GroupLayout.PREFERRED_SIZE, 120, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(18, 18, 18)
-                        .addComponent(jTextFieldObservacionesConsulta, javax.swing.GroupLayout.PREFERRED_SIZE, 185, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel4Layout.createSequentialGroup()
-                        .addComponent(jButtonRegistroSintomas, javax.swing.GroupLayout.PREFERRED_SIZE, 103, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(42, 42, 42)
-                        .addComponent(jRadioButton2, javax.swing.GroupLayout.PREFERRED_SIZE, 100, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(48, 48, 48))
-                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel4Layout.createSequentialGroup()
-                        .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                            .addComponent(jLabel17, javax.swing.GroupLayout.PREFERRED_SIZE, 120, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(jLabel24, javax.swing.GroupLayout.PREFERRED_SIZE, 120, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                            .addComponent(jComboBoxEleccionCliente, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                            .addComponent(jTextFieldAlergias, javax.swing.GroupLayout.DEFAULT_SIZE, 185, Short.MAX_VALUE))))
-                .addGap(194, 194, 194))
-        );
-        jPanel4Layout.setVerticalGroup(
-            jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel4Layout.createSequentialGroup()
-                .addComponent(jLabel4, javax.swing.GroupLayout.PREFERRED_SIZE, 35, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 31, Short.MAX_VALUE)
-                .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jComboBoxEleccionCliente, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jLabel24))
-                .addGap(18, 18, 18)
-                .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jTextFieldAlergias, javax.swing.GroupLayout.PREFERRED_SIZE, 59, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jLabel17))
-                .addGap(18, 18, 18)
-                .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jTextFieldObservacionesConsulta, javax.swing.GroupLayout.PREFERRED_SIZE, 68, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jLabel18))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jTextFieldDiagnosticoConsulta, javax.swing.GroupLayout.PREFERRED_SIZE, 62, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jLabel19))
-                .addGap(45, 45, 45)
-                .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jButtonRegistroSintomas, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jRadioButton2))
-                .addGap(27, 27, 27))
-        );
+        // Layout adaptable: crece/decrece con la ventana sin deformar los controles
+        jPanel4.setLayout(new java.awt.GridBagLayout());
+        java.awt.GridBagConstraints gbcConsulta = new java.awt.GridBagConstraints();
+        gbcConsulta.insets = new java.awt.Insets(8, 8, 8, 8);
+
+        jLabel4.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        gbcConsulta.gridx = 0; gbcConsulta.gridy = 0; gbcConsulta.gridwidth = 2;
+        gbcConsulta.anchor = java.awt.GridBagConstraints.CENTER;
+        jPanel4.add(jLabel4, gbcConsulta);
+        gbcConsulta.gridwidth = 1;
+
+        gbcConsulta.gridx = 0; gbcConsulta.gridy = 1; gbcConsulta.fill = java.awt.GridBagConstraints.NONE; gbcConsulta.weightx = 0; gbcConsulta.anchor = java.awt.GridBagConstraints.EAST;
+        jPanel4.add(jLabel24, gbcConsulta);
+        gbcConsulta.gridx = 1; gbcConsulta.fill = java.awt.GridBagConstraints.HORIZONTAL; gbcConsulta.weightx = 1.0; gbcConsulta.anchor = java.awt.GridBagConstraints.WEST;
+        jPanel4.add(jComboBoxEleccionCliente, gbcConsulta);
+
+        gbcConsulta.gridx = 0; gbcConsulta.gridy = 2; gbcConsulta.fill = java.awt.GridBagConstraints.NONE; gbcConsulta.weightx = 0; gbcConsulta.anchor = java.awt.GridBagConstraints.EAST;
+        jPanel4.add(jLabel17, gbcConsulta);
+        gbcConsulta.gridx = 1; gbcConsulta.fill = java.awt.GridBagConstraints.HORIZONTAL; gbcConsulta.weightx = 1.0; gbcConsulta.anchor = java.awt.GridBagConstraints.WEST;
+        jPanel4.add(jTextFieldAlergias, gbcConsulta);
+
+        gbcConsulta.gridx = 0; gbcConsulta.gridy = 3; gbcConsulta.fill = java.awt.GridBagConstraints.NONE; gbcConsulta.weightx = 0; gbcConsulta.anchor = java.awt.GridBagConstraints.EAST;
+        jPanel4.add(jLabel18, gbcConsulta);
+        gbcConsulta.gridx = 1; gbcConsulta.fill = java.awt.GridBagConstraints.HORIZONTAL; gbcConsulta.weightx = 1.0; gbcConsulta.anchor = java.awt.GridBagConstraints.WEST;
+        jPanel4.add(jTextFieldObservacionesConsulta, gbcConsulta);
+
+        gbcConsulta.gridx = 0; gbcConsulta.gridy = 4; gbcConsulta.fill = java.awt.GridBagConstraints.NONE; gbcConsulta.weightx = 0; gbcConsulta.anchor = java.awt.GridBagConstraints.EAST;
+        jPanel4.add(jLabel19, gbcConsulta);
+        gbcConsulta.gridx = 1; gbcConsulta.fill = java.awt.GridBagConstraints.HORIZONTAL; gbcConsulta.weightx = 1.0; gbcConsulta.anchor = java.awt.GridBagConstraints.WEST;
+        jPanel4.add(jTextFieldDiagnosticoConsulta, gbcConsulta);
+
+        javax.swing.JPanel panelBotonesConsulta = new javax.swing.JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.CENTER, 20, 5));
+        panelBotonesConsulta.add(jButtonRegistroSintomas);
+        panelBotonesConsulta.add(jRadioButton2);
+        gbcConsulta.gridx = 0; gbcConsulta.gridy = 5; gbcConsulta.gridwidth = 2;
+        gbcConsulta.fill = java.awt.GridBagConstraints.NONE; gbcConsulta.weightx = 0; gbcConsulta.weighty = 1.0;
+        gbcConsulta.anchor = java.awt.GridBagConstraints.CENTER;
+        jPanel4.add(panelBotonesConsulta, gbcConsulta);
 
         jTabbedPane1.addTab("Consulta", jPanel4);
 
@@ -316,56 +350,36 @@ public class Hospital extends javax.swing.JFrame {
 
         jComboBoxEleccionEgreso.addActionListener(this::jComboBoxEleccionEgresoActionPerformed);
 
-        javax.swing.GroupLayout jPanel3Layout = new javax.swing.GroupLayout(jPanel3);
-        jPanel3.setLayout(jPanel3Layout);
-        jPanel3Layout.setHorizontalGroup(
-            jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel3Layout.createSequentialGroup()
-                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(jPanel3Layout.createSequentialGroup()
-                        .addGap(248, 248, 248)
-                        .addComponent(jLabel3))
-                    .addGroup(jPanel3Layout.createSequentialGroup()
-                        .addGap(319, 319, 319)
-                        .addComponent(jButtonEgreso, javax.swing.GroupLayout.PREFERRED_SIZE, 89, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addGroup(jPanel3Layout.createSequentialGroup()
-                        .addGap(190, 190, 190)
-                        .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                            .addGroup(jPanel3Layout.createSequentialGroup()
-                                .addComponent(jLabel21, javax.swing.GroupLayout.PREFERRED_SIZE, 114, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                                .addComponent(jTextFieldObservacionesEgreso, javax.swing.GroupLayout.PREFERRED_SIZE, 229, javax.swing.GroupLayout.PREFERRED_SIZE))
-                            .addGroup(jPanel3Layout.createSequentialGroup()
-                                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                                    .addComponent(jLabel20, javax.swing.GroupLayout.PREFERRED_SIZE, 120, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                    .addComponent(jLabel25, javax.swing.GroupLayout.PREFERRED_SIZE, 120, javax.swing.GroupLayout.PREFERRED_SIZE))
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                    .addComponent(jComboBoxEleccionEgreso, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                    .addComponent(jSpinnerHoraSalida))))))
-                .addContainerGap(188, Short.MAX_VALUE))
-        );
-        jPanel3Layout.setVerticalGroup(
-            jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel3Layout.createSequentialGroup()
-                .addContainerGap()
-                .addComponent(jLabel3, javax.swing.GroupLayout.PREFERRED_SIZE, 35, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(62, 62, 62)
-                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jComboBoxEleccionEgreso, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jLabel25))
-                .addGap(18, 18, 18)
-                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jSpinnerHoraSalida, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jLabel20))
-                .addGap(18, 18, 18)
-                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jTextFieldObservacionesEgreso, javax.swing.GroupLayout.PREFERRED_SIZE, 83, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jLabel21))
-                .addGap(18, 18, 18)
-                .addComponent(jButtonEgreso, javax.swing.GroupLayout.PREFERRED_SIZE, 36, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(110, Short.MAX_VALUE))
-        );
+        // Layout adaptable: crece/decrece con la ventana sin deformar los controles
+        jPanel3.setLayout(new java.awt.GridBagLayout());
+        java.awt.GridBagConstraints gbcEgreso = new java.awt.GridBagConstraints();
+        gbcEgreso.insets = new java.awt.Insets(8, 8, 8, 8);
+
+        jLabel3.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        gbcEgreso.gridx = 0; gbcEgreso.gridy = 0; gbcEgreso.gridwidth = 2;
+        gbcEgreso.anchor = java.awt.GridBagConstraints.CENTER;
+        jPanel3.add(jLabel3, gbcEgreso);
+        gbcEgreso.gridwidth = 1;
+
+        gbcEgreso.gridx = 0; gbcEgreso.gridy = 1; gbcEgreso.fill = java.awt.GridBagConstraints.NONE; gbcEgreso.weightx = 0; gbcEgreso.anchor = java.awt.GridBagConstraints.EAST;
+        jPanel3.add(jLabel25, gbcEgreso);
+        gbcEgreso.gridx = 1; gbcEgreso.fill = java.awt.GridBagConstraints.HORIZONTAL; gbcEgreso.weightx = 1.0; gbcEgreso.anchor = java.awt.GridBagConstraints.WEST;
+        jPanel3.add(jComboBoxEleccionEgreso, gbcEgreso);
+
+        gbcEgreso.gridx = 0; gbcEgreso.gridy = 2; gbcEgreso.fill = java.awt.GridBagConstraints.NONE; gbcEgreso.weightx = 0; gbcEgreso.anchor = java.awt.GridBagConstraints.EAST;
+        jPanel3.add(jLabel20, gbcEgreso);
+        gbcEgreso.gridx = 1; gbcEgreso.fill = java.awt.GridBagConstraints.HORIZONTAL; gbcEgreso.weightx = 1.0; gbcEgreso.anchor = java.awt.GridBagConstraints.WEST;
+        jPanel3.add(jSpinnerHoraSalida, gbcEgreso);
+
+        gbcEgreso.gridx = 0; gbcEgreso.gridy = 3; gbcEgreso.fill = java.awt.GridBagConstraints.NONE; gbcEgreso.weightx = 0; gbcEgreso.anchor = java.awt.GridBagConstraints.EAST;
+        jPanel3.add(jLabel21, gbcEgreso);
+        gbcEgreso.gridx = 1; gbcEgreso.fill = java.awt.GridBagConstraints.HORIZONTAL; gbcEgreso.weightx = 1.0; gbcEgreso.anchor = java.awt.GridBagConstraints.WEST;
+        jPanel3.add(jTextFieldObservacionesEgreso, gbcEgreso);
+
+        gbcEgreso.gridx = 0; gbcEgreso.gridy = 4; gbcEgreso.gridwidth = 2;
+        gbcEgreso.fill = java.awt.GridBagConstraints.NONE; gbcEgreso.weightx = 0; gbcEgreso.weighty = 1.0;
+        gbcEgreso.anchor = java.awt.GridBagConstraints.CENTER;
+        jPanel3.add(jButtonEgreso, gbcEgreso);
 
         jTabbedPane1.addTab("Egreso", jPanel3);
 
@@ -400,56 +414,25 @@ public class Hospital extends javax.swing.JFrame {
         jButtonVerDetalles.setText("Ver detalles");
         jButtonVerDetalles.addActionListener(this::jButtonVerDetallesActionPerformed);
 
-        javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
-        jPanel1.setLayout(jPanel1Layout);
-        jPanel1Layout.setHorizontalGroup(
-            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
-                .addGap(0, 0, Short.MAX_VALUE)
-                .addComponent(jLabel23, javax.swing.GroupLayout.PREFERRED_SIZE, 145, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(291, 291, 291))
-            .addGroup(jPanel1Layout.createSequentialGroup()
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addGap(271, 271, 271)
-                        .addComponent(jLabel5))
-                    .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addGap(25, 25, 25)
-                        .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 674, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addGap(189, 189, 189)
-                        .addComponent(jTextField6, javax.swing.GroupLayout.PREFERRED_SIZE, 165, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addComponent(jButtonBuscar)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(jButtonVerDetalles)))
-                .addContainerGap(34, Short.MAX_VALUE))
-            .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                .addGroup(jPanel1Layout.createSequentialGroup()
-                    .addGap(0, 0, Short.MAX_VALUE)
-                    .addComponent(jLabel22)
-                    .addGap(0, 0, Short.MAX_VALUE)))
-        );
-        jPanel1Layout.setVerticalGroup(
-            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel1Layout.createSequentialGroup()
-                .addComponent(jLabel5, javax.swing.GroupLayout.PREFERRED_SIZE, 35, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 33, Short.MAX_VALUE)
-                .addComponent(jLabel23)
-                .addGap(18, 18, 18)
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jButtonBuscar)
-                    .addComponent(jTextField6, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jButtonVerDetalles))
-                .addGap(32, 32, 32)
-                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 216, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(61, 61, 61))
-            .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                .addGroup(jPanel1Layout.createSequentialGroup()
-                    .addGap(0, 0, Short.MAX_VALUE)
-                    .addComponent(jLabel22)
-                    .addGap(0, 0, Short.MAX_VALUE)))
-        );
+        // Layout adaptable: la tabla (jScrollPane1) ocupa todo el espacio extra al agrandar la ventana
+        jPanel1.setLayout(new java.awt.BorderLayout(10, 10));
+        jPanel1.setBorder(javax.swing.BorderFactory.createEmptyBorder(10, 15, 10, 15));
+
+        javax.swing.JPanel panelSuperiorVista = new javax.swing.JPanel(new java.awt.GridLayout(2, 1, 5, 5));
+
+        jLabel5.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        panelSuperiorVista.add(jLabel5);
+
+        javax.swing.JPanel filaBusquedaVista = new javax.swing.JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.CENTER, 10, 5));
+        filaBusquedaVista.add(jLabel23);
+        filaBusquedaVista.add(jTextField6);
+        filaBusquedaVista.add(jButtonBuscar);
+        filaBusquedaVista.add(jButtonVerDetalles);
+        filaBusquedaVista.add(jLabel22);
+        panelSuperiorVista.add(filaBusquedaVista);
+
+        jPanel1.add(panelSuperiorVista, java.awt.BorderLayout.NORTH);
+        jPanel1.add(jScrollPane1, java.awt.BorderLayout.CENTER);
 
         jTabbedPane1.addTab("Vista de pacientes", jPanel1);
 
@@ -537,15 +520,18 @@ public class Hospital extends javax.swing.JFrame {
             return;
         }
 
-        double pesoValor = Double.parseDouble(peso);
+       double pesoValor = Double.parseDouble(peso);
         java.util.Date fechaHoraIngreso = (java.util.Date) jSpinnerFechaHora.getValue();
 
-        boolean creado = controlador.crearPaciente(nombre, apPat, apMat, genero, pesoValor,
-        fecha, fechaHoraIngreso);
+        java.time.LocalDate fechaNacLocal = fecha.toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDate();
+        int edadCalculada = java.time.Period.between(fechaNacLocal, java.time.LocalDate.now()).getYears();
+        jTextFieldEdad.setText(String.valueOf(edadCalculada));
 
+        boolean creado = controlador.crearPaciente(nombre, apPat, apMat, edadCalculada, genero, pesoValor,
+        fecha, fechaHoraIngreso);
         if (creado) {
             javax.swing.table.DefaultTableModel modeloTabla = (javax.swing.table.DefaultTableModel) jTableVistaPacientes.getModel();
-            modeloTabla.addRow(new Object[]{nombre, apPat, apMat, genero, peso});
+            modeloTabla.addRow(new Object[]{nombre, apPat, apMat, edadCalculada, genero, peso});
             jComboBoxEleccionCliente.addItem(nombre + " " + apPat + " " + apMat);
             jTextFieldNombre.setText("");
             jTextFieldApPat.setText("");
@@ -559,7 +545,6 @@ public class Hospital extends javax.swing.JFrame {
         } else {
             javax.swing.JOptionPane.showMessageDialog(this, "No se pudo crear el paciente. Verifique el nombre.");
         }
-
     } catch (Exception e) {
         javax.swing.JOptionPane.showMessageDialog(this, "Ocurrió un error al registrar al paciente: " + e.getMessage());
     }
@@ -670,7 +655,25 @@ public class Hospital extends javax.swing.JFrame {
     }//GEN-LAST:event_jButtonEgresoActionPerformed
 
     private void jComboBoxEleccionEgresoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jComboBoxEleccionEgresoActionPerformed
-        // TODO add your handling code here:
+
+    int posicion = jComboBoxEleccionEgreso.getSelectedIndex();
+
+    if (posicion < 0 || posicion >= pacientesEgreso.size()) {
+        jComboBoxEleccionEgreso.setToolTipText(null);
+        jTextFieldObservacionesEgreso.setText("");
+        return;
+    }
+
+    Paciente p = pacientesEgreso.get(posicion);
+    if (p == null) {
+        return;
+    }
+
+    // Carga datos reales del paciente elegido (via Controlador, no listas vacias)
+    jComboBoxEleccionEgreso.setToolTipText(controlador.obtenerInfoCompleta(p));
+    jSpinnerHoraSalida.setValue(new java.util.Date());
+    jTextFieldObservacionesEgreso.setText("");
+
     }//GEN-LAST:event_jComboBoxEleccionEgresoActionPerformed
 
     private void jButtonBuscarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonBuscarActionPerformed
@@ -765,11 +768,7 @@ public class Hospital extends javax.swing.JFrame {
         //</editor-fold>
 
         /* Create and display the form */
-        java.awt.EventQueue.invokeLater(() -> {
-            Hospital ventana = new Hospital();
-            ventana.setLocationRelativeTo(null);
-            ventana.setVisible(true);
-        });
+        java.awt.EventQueue.invokeLater(() -> new Hospital().setVisible(true));
     }
 
     private final Controlador controlador = new Controlador();

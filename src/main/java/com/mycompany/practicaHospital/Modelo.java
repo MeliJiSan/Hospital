@@ -21,7 +21,7 @@ public class Modelo {
     // Ajusta "topicos" al nombre real de tu base de datos si es distinto.
     private static String url = "jdbc:postgresql://localhost:5432/topicos?currentSchema=\"Hospital\"";
     private static String usuario = "postgres";
-    private static String contraseña = "jora060128";
+    private static String contraseña = "jaz";
 
 
     // CONEXION =========================================================
@@ -90,6 +90,7 @@ public class Modelo {
                 );
                 int idPaciente = rs.getInt("id_paciente");
                 p.setIdPaciente(idPaciente);
+                p.setEdad(rs.getInt("edad"));
 
                 cargarUltimaConsulta(conn, p, idPaciente);
                 cargarUltimoEgreso(conn, p, idPaciente);
@@ -437,20 +438,27 @@ public class Modelo {
 
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~ RECETA ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     // CREATE (Insertar) =========================================================
-    public static void insertarReceta(Receta receta) {
-        String sql = "INSERT INTO recetas (fecha_emision, indicaciones_generales, id_consulta) "
-                   + "VALUES (?, ?, ?)";
-        try (Connection conn = estadoConeccion();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setTimestamp(1, receta.getFechaEmision());
-            pstmt.setString(2, receta.getIndicacionesGenerales());
-            pstmt.setInt(3, receta.getIdConsulta());
-            pstmt.executeUpdate();
-            System.out.println("Receta insertada correctamente.");
-        } catch (SQLException e) {
-            System.out.println("Error al insertar receta: " + e.getMessage());
+  public static int insertarReceta(Receta receta) {
+    String sql = "INSERT INTO recetas (fecha_emision, indicaciones_generales, id_consulta) "
+               + "VALUES (?, ?, ?) RETURNING id_receta";
+    try (Connection conn = estadoConeccion();
+         PreparedStatement pstmt = conn.prepareStatement(sql)) {
+        pstmt.setTimestamp(1, receta.getFechaEmision());
+        pstmt.setString(2, receta.getIndicacionesGenerales());
+        pstmt.setInt(3, receta.getIdConsulta());
+
+        try (ResultSet rs = pstmt.executeQuery()) {
+            if (rs.next()) {
+                System.out.println("Receta insertada correctamente.");
+                return rs.getInt("id_receta");
+            }
         }
+        return -1;
+    } catch (SQLException e) {
+        System.out.println("Error al insertar receta: " + e.getMessage());
+        return -1;
     }
+}
 
     // REGRESAR =========================================================
     public static void leerReceta() {
@@ -500,6 +508,24 @@ public class Modelo {
     }
 
 
+    // Devuelve el id de la consulta mas reciente de un paciente, o -1 si no tiene ninguna
+    public static int obtenerUltimaConsultaId(int idPaciente) {
+        String sql = "SELECT id_consulta FROM consultas WHERE id_paciente = ? ORDER BY id_consulta DESC LIMIT 1";
+        try (Connection conn = estadoConeccion();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, idPaciente);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt("id_consulta");
+                }
+            }
+            return -1;
+        } catch (SQLException e) {
+            System.out.println("Error al buscar consulta: " + e.getMessage());
+            return -1;
+        }
+    }
+    
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~ DETALLE_RECETA ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     // CREATE (Insertar) =========================================================
     public static void insertarDetalleReceta(DetalleReceta detalle) {
