@@ -14,12 +14,21 @@ public class Controlador {
         this.listaPacientes = new ArrayList<>();
     }
 
-    public boolean crearPaciente(String nombre, String apPat, String apMat, int edad, String genero, String peso) {
+    public boolean crearPaciente(String nombre, String apPat, String apMat, int edad, String genero, double peso,
+                                  java.util.Date fechaNacimiento, java.util.Date fechaHoraIngreso) {
         if (nombre == null || nombre.trim().isEmpty()) {
             return false;
         }
 
-        Paciente nuevo = new Paciente(nombre, apPat, apMat, edad, genero, peso);
+        Paciente nuevo = new Paciente(nombre, apPat, apMat, edad, genero, peso, fechaNacimiento, fechaHoraIngreso);
+
+        // Guarda en la tabla "Hospital".pacientes y recupera el id_paciente generado
+        int idGenerado = Modelo.insertarPaciente(nuevo);
+        if (idGenerado <= 0) {
+            return false; // no se pudo guardar en la base de datos
+        }
+        nuevo.setIdPaciente(idGenerado);
+
         listaPacientes.add(nuevo);
         return true;
     }
@@ -32,10 +41,25 @@ public class Controlador {
         p.setAlergias(alergias);
         p.setObservacionesSintomas(observaciones);
         p.setDiagnostico(diagnostico);
+
+        // El formulario no pide doctor, asi que se usa/crea uno por defecto
+        // para poder cumplir con la FK NOT NULL de la tabla consultas.
+        int idDoctor = Modelo.obtenerOCrearDoctorPorDefecto();
+
+        Consulta consulta = new Consulta(
+                alergias,
+                observaciones,
+                diagnostico,
+                new java.sql.Timestamp(System.currentTimeMillis()),
+                p.getIdPaciente(),
+                idDoctor
+        );
+        Modelo.insertarConsulta(consulta);
+
         return true;
     }
 
-    public boolean registrarEgreso(int indicePaciente, String horaSalida, String observaciones) {
+    public boolean registrarEgreso(int indicePaciente, java.util.Date horaSalida, String observaciones) {
         if (indicePaciente < 0 || indicePaciente >= listaPacientes.size()) {
             return false;
         }
@@ -43,6 +67,15 @@ public class Controlador {
         p.setHoraSalida(horaSalida);
         p.setObservacionesEgreso(observaciones);
         p.setEsSalida(true);
+
+        Egreso egreso = new Egreso(
+                observaciones,
+                new java.sql.Timestamp(System.currentTimeMillis()),
+                p.getIdPaciente(),
+                new java.sql.Time(horaSalida.getTime())
+        );
+        Modelo.insertarEgreso(egreso);
+
         return true;
     }
     
@@ -97,7 +130,8 @@ public class Controlador {
     sb.append("Egresado: ").append(p.isEsSalida() ? "Sí" : "No").append("\n");
 
     if (p.isEsSalida()) {
-        sb.append("Hora de salida: ").append(p.getHoraSalida()).append("\n");
+        java.text.SimpleDateFormat formato = new java.text.SimpleDateFormat("dd/MM/yyyy HH:mm");
+        sb.append("Hora de salida: ").append(formato.format(p.getHoraSalida())).append("\n");
         sb.append("Observaciones egreso: ").append(p.getObservacionesEgreso() != null ? p.getObservacionesEgreso() : "—").append("\n");
     }
 

@@ -521,7 +521,11 @@ public class Hospital extends javax.swing.JFrame {
         long tiempoMS = java.lang.System.currentTimeMillis() - fecha.getTime();
         int edad = (int) (tiempoMS / 1000 / 60 / 60 / 24 / 365.25);
 
-        boolean creado = controlador.crearPaciente(nombre, apPat, apMat, edad, genero, peso);
+        double pesoValor = Double.parseDouble(peso);
+        java.util.Date fechaHoraIngreso = (java.util.Date) jSpinnerFechaHora.getValue();
+
+        boolean creado = controlador.crearPaciente(nombre, apPat, apMat, edad, genero, pesoValor,
+                fecha, fechaHoraIngreso);
 
         if (creado) {
             javax.swing.table.DefaultTableModel modeloTabla = (javax.swing.table.DefaultTableModel) jTableVistaPacientes.getModel();
@@ -622,8 +626,7 @@ public class Hospital extends javax.swing.JFrame {
         Paciente p = pacientesEgreso.get(posicion);
         int indice = controlador.obtenerIndice(p);
 
-        java.util.Date fecha = (java.util.Date) jSpinnerHoraSalida.getValue();
-        String horaSalida = new java.text.SimpleDateFormat("dd/MM/yyyy HH:mm").format(fecha);
+        java.util.Date horaSalida = (java.util.Date) jSpinnerHoraSalida.getValue();
 
         String observaciones = jTextFieldObservacionesEgreso.getText();
 
@@ -635,8 +638,9 @@ public class Hospital extends javax.swing.JFrame {
         boolean ok = controlador.registrarEgreso(indice, horaSalida, observaciones);
 
         if (ok) {
+            String horaTexto = new java.text.SimpleDateFormat("dd/MM/yyyy HH:mm").format(horaSalida);
             jTextFieldObservacionesEgreso.setText("");
-            javax.swing.JOptionPane.showMessageDialog(this, "Egreso registrado correctamente.\nHora: " + horaSalida);
+            javax.swing.JOptionPane.showMessageDialog(this, "Egreso registrado correctamente.\nHora: " + horaTexto);
         } else {
             javax.swing.JOptionPane.showMessageDialog(this, "Error al registrar el egreso.");
         }
