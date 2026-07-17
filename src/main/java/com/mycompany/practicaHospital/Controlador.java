@@ -41,10 +41,21 @@ public class Controlador {
 
     // Trae todos los pacientes ya guardados en la BD y llena la lista en memoria.
     // Se usa al iniciar el programa para mostrar los registros existentes.
-    public void cargarPacientesDesdeBD() {
-        List<Paciente> pacientesBD = Modelo.obtenerPacientes();
-        listaPacientes.clear();
-        listaPacientes.addAll(pacientesBD);
+    // Regresa false (en vez de tumbar la aplicacion) si la BD no esta disponible
+    // o la conexion falla, por ejemplo por credenciales incorrectas en Modelo.
+    public boolean cargarPacientesDesdeBD() {
+        try {
+            List<Paciente> pacientesBD = Modelo.obtenerPacientes();
+            listaPacientes.clear();
+            listaPacientes.addAll(pacientesBD);
+            return true;
+        } catch (RuntimeException e) {
+            // Modelo puede regresar una conexion nula si fallan las credenciales
+            // o el servidor no esta disponible; aqui se evita que eso tumbe la GUI.
+            System.err.println("No se pudieron cargar los pacientes desde la BD: " + e.getMessage());
+            listaPacientes.clear();
+            return false;
+        }
     }
 
     // ================= ACCESO SEGURO POR INDICE / ID =================

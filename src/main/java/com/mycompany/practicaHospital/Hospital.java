@@ -24,7 +24,13 @@ public class Hospital extends javax.swing.JFrame {
 
     // Trae los pacientes ya guardados en la BD y los pinta en la tabla y el combo box
     private void cargarPacientesExistentes() {
-        controlador.cargarPacientesDesdeBD();
+        boolean ok = controlador.cargarPacientesDesdeBD();
+        if (!ok) {
+            javax.swing.JOptionPane.showMessageDialog(this,
+                "No se pudo conectar a la base de datos. Revisa la conexion en Modelo.java.\n"
+                + "La aplicación se abrirá sin pacientes cargados.",
+                "Error de conexión", javax.swing.JOptionPane.WARNING_MESSAGE);
+        }
         javax.swing.table.DefaultTableModel modeloTabla = (javax.swing.table.DefaultTableModel) jTableVistaPacientes.getModel();
         for (Paciente p : controlador.getListaPacientes()) {
             modeloTabla.addRow(new Object[]{p.getNombre(), p.getApPat(), p.getApMat(), p.getEdad(), p.getGenero(), p.getPeso()});
@@ -94,6 +100,7 @@ public class Hospital extends javax.swing.JFrame {
         jButtonVerDetalles = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+        setResizable(false);
 
         jLabel2.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         jLabel2.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
@@ -759,7 +766,11 @@ public class Hospital extends javax.swing.JFrame {
         //</editor-fold>
 
         /* Create and display the form */
-        java.awt.EventQueue.invokeLater(() -> new Hospital().setVisible(true));
+        java.awt.EventQueue.invokeLater(() -> {
+            Hospital ventana = new Hospital();
+            ventana.setLocationRelativeTo(null);
+            ventana.setVisible(true);
+        });
     }
 
     private final Controlador controlador = new Controlador();
