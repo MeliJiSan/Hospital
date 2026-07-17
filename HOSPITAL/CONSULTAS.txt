@@ -1,0 +1,153 @@
+CONSULTAS:
+-- Table: Hospital.consultas
+
+-- DROP TABLE IF EXISTS "Hospital".consultas;
+
+CREATE TABLE IF NOT EXISTS "Hospital".consultas
+(
+    id_consulta integer NOT NULL DEFAULT nextval('"Hospital".consultas_id_consultas_seq'::regclass),
+    alergias text COLLATE pg_catalog."default" NOT NULL,
+    observaciones_sintomas text COLLATE pg_catalog."default" NOT NULL,
+    diagnostico text COLLATE pg_catalog."default" NOT NULL,
+    fecha_registro timestamp with time zone NOT NULL,
+    id_paciente integer NOT NULL,
+    id_doctor integer NOT NULL,
+    CONSTRAINT consultas_pkey PRIMARY KEY (id_consulta),
+    CONSTRAINT id_doctor FOREIGN KEY (id_doctor)
+        REFERENCES "Hospital".doctor (id_doctor) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION
+        NOT VALID,
+    CONSTRAINT id_paciente FOREIGN KEY (id_paciente)
+        REFERENCES "Hospital".pacientes (id_paciente) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION
+        NOT VALID
+)
+
+TABLESPACE pg_default;
+
+ALTER TABLE IF EXISTS "Hospital".consultas
+    OWNER to postgres;
+
+DETALLE_RECETA:
+-- Table: Hospital.detalle_receta
+
+-- DROP TABLE IF EXISTS "Hospital".detalle_receta;
+
+CREATE TABLE IF NOT EXISTS "Hospital".detalle_receta
+(
+    id_receta integer NOT NULL DEFAULT nextval('"Hospital".detalle_receta_id_receta_seq'::regclass),
+    medicamento_nombre character varying COLLATE pg_catalog."default" NOT NULL,
+    dosis character varying COLLATE pg_catalog."default" NOT NULL,
+    frecuencia character varying COLLATE pg_catalog."default" NOT NULL,
+    via_administracion character varying COLLATE pg_catalog."default" NOT NULL,
+    duracion character varying COLLATE pg_catalog."default",
+    CONSTRAINT id_receta FOREIGN KEY (id_receta)
+        REFERENCES "Hospital".recetas (id_receta) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION
+        NOT VALID
+)
+
+TABLESPACE pg_default;
+
+ALTER TABLE IF EXISTS "Hospital".detalle_receta
+    OWNER to postgres;
+
+DOCTOR:
+-- Table: Hospital.doctor
+
+-- DROP TABLE IF EXISTS "Hospital".doctor;
+
+CREATE TABLE IF NOT EXISTS "Hospital".doctor
+(
+    id_doctor integer NOT NULL DEFAULT nextval('"Hospital".doctor_id_doctor_seq'::regclass),
+    nombre_doctor character varying COLLATE pg_catalog."default" NOT NULL,
+    num_cedula character varying COLLATE pg_catalog."default" NOT NULL,
+    apellidop character varying COLLATE pg_catalog."default" NOT NULL,
+    CONSTRAINT doctor_pkey PRIMARY KEY (id_doctor)
+)
+
+TABLESPACE pg_default;
+
+ALTER TABLE IF EXISTS "Hospital".doctor
+    OWNER to postgres;
+
+
+EGRESOS:
+-- Table: Hospital.egresos
+
+-- DROP TABLE IF EXISTS "Hospital".egresos;
+
+CREATE TABLE IF NOT EXISTS "Hospital".egresos
+(
+    id_egreso integer NOT NULL DEFAULT nextval('"Hospital".egresos_id_egreso_seq'::regclass),
+    observaciones_egreso text COLLATE pg_catalog."default" NOT NULL,
+    fecha_registro timestamp with time zone NOT NULL,
+    id_paciente integer NOT NULL,
+    hora_salida time with time zone NOT NULL,
+    CONSTRAINT egresos_pkey PRIMARY KEY (id_egreso),
+    CONSTRAINT id_paciente FOREIGN KEY (id_paciente)
+        REFERENCES "Hospital".pacientes (id_paciente) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION
+        NOT VALID
+)
+
+TABLESPACE pg_default;
+
+ALTER TABLE IF EXISTS "Hospital".egresos
+    OWNER to postgres;
+
+
+PACIENTES:
+-- Table: Hospital.pacientes
+
+-- DROP TABLE IF EXISTS "Hospital".pacientes;
+
+CREATE TABLE IF NOT EXISTS "Hospital".pacientes
+(
+    id_paciente integer NOT NULL DEFAULT nextval('"Hospital".pacientes_id_pacientes_seq'::regclass),
+    nombre character varying COLLATE pg_catalog."default" NOT NULL,
+    apellidop character varying COLLATE pg_catalog."default" NOT NULL,
+    apellidom character varying COLLATE pg_catalog."default" NOT NULL,
+    fecha_nacimiento date NOT NULL,
+    edad integer NOT NULL,
+    genero character varying COLLATE pg_catalog."default" NOT NULL,
+    peso double precision NOT NULL,
+    fecha_hora_ingreso timestamp with time zone NOT NULL,
+    creado_en timestamp with time zone NOT NULL,
+    CONSTRAINT pacientes_pkey PRIMARY KEY (id_paciente)
+)
+
+TABLESPACE pg_default;
+
+ALTER TABLE IF EXISTS "Hospital".pacientes
+    OWNER to postgres;
+
+
+RECETAS:
+-- Table: Hospital.recetas
+
+-- DROP TABLE IF EXISTS "Hospital".recetas;
+
+CREATE TABLE IF NOT EXISTS "Hospital".recetas
+(
+    id_receta integer NOT NULL DEFAULT nextval('"Hospital".recetas_id_receta_seq'::regclass),
+    fecha_emision timestamp with time zone NOT NULL,
+    indicaciones_generales text COLLATE pg_catalog."default" NOT NULL,
+    id_consulta integer NOT NULL,
+    CONSTRAINT recetas_pkey PRIMARY KEY (id_receta),
+    CONSTRAINT id_consulta FOREIGN KEY (id_consulta)
+        REFERENCES "Hospital".consultas (id_consulta) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION
+        NOT VALID
+)
+
+TABLESPACE pg_default;
+
+ALTER TABLE IF EXISTS "Hospital".recetas
+    OWNER to postgres;
+
