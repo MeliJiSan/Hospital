@@ -14,6 +14,14 @@ public class Controlador {
         this.listaPacientes = new ArrayList<>();
     }
 
+    // Trae todos los pacientes ya guardados en la BD y llena la lista en memoria.
+    // Se usa al iniciar el programa para mostrar los registros existentes.
+    public void cargarPacientesDesdeBD() {
+        java.util.List<Paciente> pacientesBD = Modelo.obtenerPacientes();
+        listaPacientes.clear();
+        listaPacientes.addAll(pacientesBD);
+    }
+
     public boolean crearPaciente(String nombre, String apPat, String apMat, int edad, String genero, double peso,
                                   java.util.Date fechaNacimiento, java.util.Date fechaHoraIngreso) {
         if (nombre == null || nombre.trim().isEmpty()) {

@@ -18,11 +18,11 @@ import java.sql.Statement;
  * @author angel
  */
 public class Modelo {
+    // Ajusta "topicos" al nombre real de tu base de datos si es distinto.
     private static String url = "jdbc:postgresql://localhost:5432/topicos?currentSchema=\"Hospital\"";
     private static String usuario = "postgres";
     private static String contraseña = "jora060128";
-    // Esta parte dependera de su usuario y la contraseña que pusieron, checar tambien la url pues esta asi en mi caso
-   
+
 
     // CONEXION =========================================================
     public static Connection estadoConeccion() {
@@ -70,7 +70,79 @@ public class Modelo {
         }
     }
 
-    // REGRESAR =========================================================
+    // REGRESAR (objetos completos, usado al iniciar el programa) =========================
+    public static java.util.List<Paciente> obtenerPacientes() {
+        java.util.List<Paciente> lista = new java.util.ArrayList<>();
+        String sql = "SELECT id_paciente, nombre, apellidop, apellidom, fecha_nacimiento, edad, "
+                   + "genero, peso, fecha_hora_ingreso, creado_en FROM pacientes ORDER BY id_paciente";
+        try (Connection conn = estadoConeccion();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+            while (rs.next()) {
+                Paciente p = new Paciente(
+                        rs.getString("nombre"),
+                        rs.getString("apellidop"),
+                        rs.getString("apellidom"),
+                        rs.getInt("edad"),
+                        rs.getString("genero"),
+                        rs.getDouble("peso"),
+                        rs.getDate("fecha_nacimiento"),
+                        rs.getTimestamp("fecha_hora_ingreso")
+                );
+                int idPaciente = rs.getInt("id_paciente");
+                p.setIdPaciente(idPaciente);
+
+                cargarUltimaConsulta(conn, p, idPaciente);
+                cargarUltimoEgreso(conn, p, idPaciente);
+
+                lista.add(p);
+            }
+        } catch (SQLException e) {
+            System.out.println("Error al cargar pacientes: " + e.getMessage());
+        }
+        return lista;
+    }
+
+    // Rellena alergias/observaciones/diagnostico con la consulta mas reciente del paciente (si tiene)
+    private static void cargarUltimaConsulta(Connection conn, Paciente p, int idPaciente) {
+        String sql = "SELECT alergias, observaciones_sintomas, diagnostico FROM consultas "
+                   + "WHERE id_paciente = ? ORDER BY fecha_registro DESC LIMIT 1";
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, idPaciente);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    p.setAlergias(rs.getString("alergias"));
+                    p.setObservacionesSintomas(rs.getString("observaciones_sintomas"));
+                    p.setDiagnostico(rs.getString("diagnostico"));
+                }
+            }
+        } catch (SQLException e) {
+            System.out.println("Error al cargar consulta del paciente " + idPaciente + ": " + e.getMessage());
+        }
+    }
+
+    // Rellena hora de salida/observaciones con el egreso mas reciente del paciente (si tiene)
+    private static void cargarUltimoEgreso(Connection conn, Paciente p, int idPaciente) {
+        String sql = "SELECT observaciones_egreso, hora_salida FROM egresos "
+                   + "WHERE id_paciente = ? ORDER BY fecha_registro DESC LIMIT 1";
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, idPaciente);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    p.setObservacionesEgreso(rs.getString("observaciones_egreso"));
+                    java.sql.Time hora = rs.getTime("hora_salida");
+                    if (hora != null) {
+                        p.setHoraSalida(new java.util.Date(hora.getTime()));
+                    }
+                    p.setEsSalida(true);
+                }
+            }
+        } catch (SQLException e) {
+            System.out.println("Error al cargar egreso del paciente " + idPaciente + ": " + e.getMessage());
+        }
+    }
+
+    // REGRESAR (imprime en consola) =========================================================
     public static void leerPaciente() {
         String sql = "SELECT id_paciente, nombre, apellidop, apellidom, fecha_nacimiento, edad, "
                    + "genero, peso, fecha_hora_ingreso, creado_en FROM pacientes";

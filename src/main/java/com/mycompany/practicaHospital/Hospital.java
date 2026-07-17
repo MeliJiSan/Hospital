@@ -19,6 +19,17 @@ public class Hospital extends javax.swing.JFrame {
     public Hospital() {
         initComponents();
         jTabbedPane1.setEnabledAt(2, false);
+        cargarPacientesExistentes();
+    }
+
+    // Trae los pacientes ya guardados en la BD y los pinta en la tabla y el combo box
+    private void cargarPacientesExistentes() {
+        controlador.cargarPacientesDesdeBD();
+        javax.swing.table.DefaultTableModel modeloTabla = (javax.swing.table.DefaultTableModel) jTableVistaPacientes.getModel();
+        for (Paciente p : controlador.getListaPacientes()) {
+            modeloTabla.addRow(new Object[]{p.getNombre(), p.getApPat(), p.getApMat(), p.getEdad(), p.getGenero(), p.getPeso()});
+            jComboBoxEleccionCliente.addItem(p.getNombre() + " " + p.getApPat() + " " + p.getApMat());
+        }
     }
 
     /**
