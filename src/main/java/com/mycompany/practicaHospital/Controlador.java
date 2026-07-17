@@ -22,13 +22,13 @@ public class Controlador {
         listaPacientes.addAll(pacientesBD);
     }
 
-    public boolean crearPaciente(String nombre, String apPat, String apMat, int edad, String genero, double peso,
-                                  java.util.Date fechaNacimiento, java.util.Date fechaHoraIngreso) {
+    public boolean crearPaciente(String nombre, String apPat, String apMat, String genero, double peso,
+                              java.util.Date fechaNacimiento, java.util.Date fechaHoraIngreso) {
         if (nombre == null || nombre.trim().isEmpty()) {
             return false;
-        }
+    }
 
-        Paciente nuevo = new Paciente(nombre, apPat, apMat, edad, genero, peso, fechaNacimiento, fechaHoraIngreso);
+        Paciente nuevo = new Paciente(nombre, apPat, apMat, genero, peso, fechaNacimiento, fechaHoraIngreso);
 
         // Guarda en la tabla "Hospital".pacientes y recupera el id_paciente generado
         int idGenerado = Modelo.insertarPaciente(nuevo);

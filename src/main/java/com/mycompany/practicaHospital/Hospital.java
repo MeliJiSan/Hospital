@@ -529,18 +529,15 @@ public class Hospital extends javax.swing.JFrame {
             return;
         }
 
-        long tiempoMS = java.lang.System.currentTimeMillis() - fecha.getTime();
-        int edad = (int) (tiempoMS / 1000 / 60 / 60 / 24 / 365.25);
-
         double pesoValor = Double.parseDouble(peso);
         java.util.Date fechaHoraIngreso = (java.util.Date) jSpinnerFechaHora.getValue();
 
-        boolean creado = controlador.crearPaciente(nombre, apPat, apMat, edad, genero, pesoValor,
-                fecha, fechaHoraIngreso);
+        boolean creado = controlador.crearPaciente(nombre, apPat, apMat, genero, pesoValor,
+        fecha, fechaHoraIngreso);
 
         if (creado) {
             javax.swing.table.DefaultTableModel modeloTabla = (javax.swing.table.DefaultTableModel) jTableVistaPacientes.getModel();
-            modeloTabla.addRow(new Object[]{nombre, apPat, apMat, edad, genero, peso});
+            modeloTabla.addRow(new Object[]{nombre, apPat, apMat, genero, peso});
             jComboBoxEleccionCliente.addItem(nombre + " " + apPat + " " + apMat);
             jTextFieldNombre.setText("");
             jTextFieldApPat.setText("");

@@ -32,8 +32,8 @@ public class Paciente {
     private java.util.Date horaSalida;
     private String observacionesEgreso;
 
-    public Paciente(String nombre, String apPat, String apMat, int edad, String genero, double peso,
-                     java.util.Date fechaNacimiento, java.util.Date fechaHoraIngreso) {
+    public Paciente(String nombre, String apPat, String apMat, String genero, double peso,
+                     java.util.Date fechaNacimiento, java.util.Date fechaHoraIngreso)  {
         this.nombre = nombre;
         this.apPat = apPat;
         this.apMat = apMat;

@@ -80,14 +80,13 @@ public class Modelo {
              ResultSet rs = stmt.executeQuery(sql)) {
             while (rs.next()) {
                 Paciente p = new Paciente(
-                        rs.getString("nombre"),
-                        rs.getString("apellidop"),
-                        rs.getString("apellidom"),
-                        rs.getInt("edad"),
-                        rs.getString("genero"),
-                        rs.getDouble("peso"),
-                        rs.getDate("fecha_nacimiento"),
-                        rs.getTimestamp("fecha_hora_ingreso")
+                    rs.getString("nombre"),
+                    rs.getString("apellidop"),
+                    rs.getString("apellidom"),
+                    rs.getString("genero"),
+                    rs.getDouble("peso"),
+                    rs.getDate("fecha_nacimiento"),
+                    rs.getTimestamp("fecha_hora_ingreso")
                 );
                 int idPaciente = rs.getInt("id_paciente");
                 p.setIdPaciente(idPaciente);
