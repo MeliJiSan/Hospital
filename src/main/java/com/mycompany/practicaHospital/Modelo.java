@@ -19,9 +19,9 @@ import java.sql.Statement;
  */
 public class Modelo {
     // Ajusta "topicos" al nombre real de tu base de datos si es distinto.
-    private static String url = "jdbc:postgresql://localhost:5432/topicos?currentSchema=\"Hospital\"";
+    private static String url = "jdbc:postgresql://localhost:5432/Topicos?currentSchema=\"Hospital\"";
     private static String usuario = "postgres";
-    private static String contraseña = "jaz";
+    private static String contraseña = "Loreli06...";
 
 
     // CONEXION =========================================================

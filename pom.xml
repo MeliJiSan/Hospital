@@ -34,4 +34,5 @@
         <maven.compiler.release>21</maven.compiler.release>
         <exec.mainClass>com.mycompany.practicas.Practicas</exec.mainClass>
     </properties>
+    
 </project>
